@@ -13,6 +13,7 @@ on:
       - 'test-*.py'
       - 'test-browser-suite.py'
       - 'test-*.cjs'
+      - 'README.txt'
   pull_request:
     paths:
       - 'PASMacApp.swift'
@@ -25,7 +26,29 @@ on:
       - 'test-*.py'
       - 'test-browser-suite.py'
       - 'test-*.cjs'
+      - 'README.txt'
 jobs:
+  # Independent of the macOS runner pool: reports source health during Mac runner backlogs.
+  source-audit:
+    name: Source and packaging contracts (Ubuntu)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate release contracts, editor JavaScript and shell scripts
+        run: |
+          python3 test-release-preflight.py
+          bash -n build-macos.sh package-macos.sh verify-macos-app.sh test-macos-install.sh
+      - name: Check Swift source grammar when Swift is available
+        run: |
+          if command -v swiftc >/dev/null; then
+            swiftc -frontend -parse PASMacApp.swift
+          else
+            echo 'Swift grammar checked on the macOS build job; Swift compiler not present on Ubuntu.'
+          fi
   browser-regression:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
