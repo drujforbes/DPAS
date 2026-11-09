@@ -1,0 +1,12 @@
+const fs=require('fs'),assert=require('assert');
+const src=fs.readFileSync(require('path').join(__dirname,'index.html'),'utf8');
+const start=src.indexOf('async function applySelectedCompanyLogo()');
+const end=src.indexOf("$('addDistributor').onclick",start);
+assert(start>=0&&end>start);
+const body=src.slice(start,end);
+assert(body.includes('const requestedMedia=state.media,requestedRole=role,requestedName=name'));
+const read=body.indexOf('await readImage('), guard=body.indexOf('if(state.media!==requestedMedia'), save=body.indexOf('state.logos[name]=');
+assert(read>=0&&guard>read&&save>guard,'stale guard must execute after network load and before cache mutation');
+assert(body.includes("$('companyLogoRole').value!==requestedRole"));
+assert(body.includes("value!==requestedName"));
+console.log('PASS: async logo load guards title, company role, and company selection before modifying logo cache');
