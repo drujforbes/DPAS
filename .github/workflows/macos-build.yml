@@ -1,0 +1,93 @@
+name: DPAS Apple Silicon build verification
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'PASMacApp.swift'
+      - 'index.html'
+      - 'AppIcon.png'
+      - 'build-macos.sh'
+      - 'package-macos.sh'
+      - 'verify-macos-app.sh'
+      - 'test-macos-install.sh'
+      - 'test-*.py'
+      - 'test-browser-suite.py'
+      - 'test-*.cjs'
+  pull_request:
+    paths:
+      - 'PASMacApp.swift'
+      - 'index.html'
+      - 'AppIcon.png'
+      - 'build-macos.sh'
+      - 'package-macos.sh'
+      - 'verify-macos-app.sh'
+      - 'test-macos-install.sh'
+      - 'test-*.py'
+      - 'test-browser-suite.py'
+      - 'test-*.cjs'
+jobs:
+  browser-regression:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Playwright-managed Chromium
+        run: |
+          python3 -m venv .venv
+          .venv/bin/python -m pip install playwright
+          .venv/bin/python -m playwright install --with-deps chromium
+      - name: Run actual Chromium browser regression suite
+        run: .venv/bin/python test-browser-suite.py
+  build:
+    needs: browser-regression
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm Apple Silicon runner
+        run: |
+          test "$(uname -m)" = arm64
+          xcodebuild -version
+      - name: Set up Node.js for editor and contract tests
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run release preflight regression suite
+        run: |
+          python3 test-release-preflight.py
+          bash -n build-macos.sh package-macos.sh verify-macos-app.sh test-macos-install.sh
+      - name: Check native Swift syntax before building
+        run: xcrun swiftc -frontend -parse PASMacApp.swift
+      - name: Build native DPAS app
+        run: |
+          set -o pipefail
+          bash build-macos.sh 2>&1 | tee native-build.log
+      - name: Verify app structure, signature and branding
+        run: |
+          set -o pipefail
+          bash verify-macos-app.sh 2>&1 | tee -a native-build.log
+      - name: Create locally signed test DMG
+        run: |
+          set -o pipefail
+          PAS_SKIP_BUILD=1 bash package-macos.sh 2>&1 | tee -a native-build.log
+      - name: Test installation from DMG into a fresh application directory
+        run: |
+          set -o pipefail
+          bash test-macos-install.sh 2>&1 | tee -a native-build.log
+      - name: Publish native build diagnostics (including failures)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DPAS-native-build-diagnostics
+          path: native-build.log
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Upload test DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: DPAS-Apple-Silicon-unsigned-test-DMG
+          path: |
+            Drucifer_Plex_Artwork_Studio_Apple_Silicon.dmg
+            Drucifer_Plex_Artwork_Studio_Apple_Silicon.dmg.sha256
+          if-no-files-found: error
+          retention-days: 14
