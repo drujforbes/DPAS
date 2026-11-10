@@ -34,7 +34,7 @@ for px in 16 32 128 256 512; do
 done
 iconutil -c icns "$ICONSET" -o "$APP_PATH/Contents/Resources/AppIcon.icns"
 rm -rf "$ICON_ROOT"
-xcrun swiftc -O -target arm64-apple-macos13.0 -framework SwiftUI -framework WebKit -framework AppKit -framework Security PASMacApp.swift -o "$APP_PATH/Contents/MacOS/PlexArtworkStudio"
+xcrun swiftc -parse-as-library -O -target arm64-apple-macos13.0 -framework SwiftUI -framework WebKit -framework AppKit -framework Security PASMacApp.swift -o "$APP_PATH/Contents/MacOS/PlexArtworkStudio"
 chmod +x "$APP_PATH/Contents/MacOS/PlexArtworkStudio"
 plutil -lint "$APP_PATH/Contents/Info.plist"
 # Use ad-hoc signing for local execution. Distribution signing is a separate step.
