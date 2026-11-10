@@ -65,3 +65,22 @@ TESTS
   python3 test-browser-suite.py    (requires Playwright + Chromium)
 
 Until a macOS run succeeds, no completed installer has been verified.
+
+LOCAL MAC BUILD IF GITHUB macOS RUNNERS DO NOT START
+----------------------------------------------------
+On an Apple Silicon Mac:
+1. Download the repository via GitHub > Code > Download ZIP, then extract.
+2. Open Terminal and change into the extracted DPAS directory:
+      cd ~/Downloads/DPAS-main
+   (Adjust if you extracted somewhere else.)
+3. Run:
+      bash build-on-my-mac.sh
+   The script checks for Apple's command-line developer tools, runs source
+   preflight checks when Python 3 and Node.js are present, builds DPAS.app,
+   packages a drag-to-Applications DMG and verifies its copied installation.
+   It does NOT require an Apple Developer account or any API keys.
+4. The DMG and SHA-256 file will be in the repository directory.
+If command-line developer tools are missing, run:
+      xcode-select --install
+Then repeat step 3. Apple SDK compilation still requires macOS; a Linux
+or Windows runner cannot build a native SwiftUI/WebKit application.

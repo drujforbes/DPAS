@@ -1,7 +1,8 @@
 from pathlib import Path
 p=Path(__file__).parent
 s=(p/'.github/workflows/macos-build.yml').read_text()
-assert 'runs-on: macos-15' in s
+assert "runs-on: ${{ inputs.macos_runner || 'macos-26' }}" in s
+assert '          - macos-15' in s and '          - macos-26' in s
 assert s.count("- 'test-*.py'") == 2
 assert s.count("- 'test-*.cjs'") == 2
 assert 'python3 test-release-preflight.py' in s

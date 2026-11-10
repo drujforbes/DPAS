@@ -1,6 +1,15 @@
 name: DPAS Apple Silicon build verification
 on:
   workflow_dispatch:
+    inputs:
+      macos_runner:
+        description: 'Apple Silicon runner image (try macos-26 if macos-15 is unavailable)'
+        type: choice
+        required: true
+        default: macos-26
+        options:
+          - macos-26
+          - macos-15
   push:
     paths:
       - 'PASMacApp.swift'
@@ -14,6 +23,7 @@ on:
       - 'test-browser-suite.py'
       - 'test-*.cjs'
       - 'README.txt'
+      - 'build-on-my-mac.sh'
   pull_request:
     paths:
       - 'PASMacApp.swift'
@@ -27,6 +37,7 @@ on:
       - 'test-browser-suite.py'
       - 'test-*.cjs'
       - 'README.txt'
+      - 'build-on-my-mac.sh'
 jobs:
   # Independent of the macOS runner pool: reports source health during Mac runner backlogs.
   source-audit:
@@ -63,7 +74,7 @@ jobs:
         run: .venv/bin/python test-browser-suite.py
   build:
     needs: browser-regression
-    runs-on: macos-15
+    runs-on: ${{ inputs.macos_runner || 'macos-26' }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
